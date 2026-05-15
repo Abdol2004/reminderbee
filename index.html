@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f0f13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reminder Bee">
+<title>Reminder Bee</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23f5a623'/><ellipse cx='50' cy='58' rx='22' ry='26' fill='%23ffd966'/><rect x='34' y='48' width='32' height='7' rx='3' fill='%23333'/><rect x='34' y='60' width='32' height='7' rx='3' fill='%23333'/><ellipse cx='32' cy='36' rx='14' ry='8' fill='white' opacity='.85' transform='rotate(-30 32 36)'/><ellipse cx='68' cy='36' rx='14' ry='8' fill='white' opacity='.85' transform='rotate(30 68 36)'/><circle cx='43' cy='52' r='3' fill='%23333'/><circle cx='57' cy='52' r='3' fill='%23333'/></svg>">
+<style>
+/* ── RESET & VARIABLES ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #0f0f13;
+  --surface: #1a1a23;
+  --s2: #23232f;
+  --border: #2e2e3d;
+  --accent: #7c6fff;
+  --green: #4ecb71;
+  --tg: #0088cc;
+  --orange: #ff9f43;
+  --blue: #45aaf2;
+  --red: #ff6b6b;
+  --text: #e8e8f0;
+  --muted: #6868a0;
+  --r: 14px;
+  --nav-h: 62px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+html { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100%; padding-bottom: calc(var(--nav-h) + var(--safe-b));
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 10px 16px; padding-top: max(10px, env(safe-area-inset-top, 10px));
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 30;
+}
+.app-logo { display: flex; align-items: center; gap: 8px; color: var(--accent); }
+.app-logo span { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.3px; }
+.hclock { text-align: right; }
+.hclock-time { font-size: 1rem; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+.hclock-date { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+
+/* ── BOTTOM NAV (4 items) ── */
+.bnav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: calc(var(--nav-h) + var(--safe-b));
+  background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; align-items: flex-start; z-index: 40;
+  padding-bottom: var(--safe-b);
+}
+.bnav-btn {
+  flex: 1; background: none; border: none; color: var(--muted);
+  padding: 9px 2px 6px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  transition: color 0.2s; font-size: 0.62rem; font-weight: 600;
+  position: relative; min-height: var(--nav-h); touch-action: manipulation;
+}
+.bnav-btn.active { color: var(--accent); }
+.bnav-btn:active { opacity: 0.7; }
+.nbadge {
+  position: absolute; top: 5px; right: calc(50% - 19px);
+  background: var(--red); color: #fff; border-radius: 20px;
+  padding: 1px 5px; font-size: 0.55rem; font-weight: 700;
+  min-width: 14px; text-align: center; display: none;
+}
+.tg-dot {
+  position: absolute; top: 6px; right: calc(50% - 18px);
+  width: 8px; height: 8px; background: var(--tg); border-radius: 50%; display: none;
+}
+
+/* ── TABS ── */
+.tab { display: none; padding: 14px 12px 0; max-width: 900px; margin: 0 auto; }
+.tab.active { display: block; }
+
+/* ── SHARED ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); }
+.card + .card { margin-top: 12px; }
+.card-hdr {
+  padding: 13px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.card-hdr h2 { font-size: 0.9rem; font-weight: 700; }
+.card-body { padding: 16px; }
+
+.inp {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; color: var(--text); font-size: 0.9rem; outline: none;
+  transition: border-color 0.2s; width: 100%; min-height: 44px; -webkit-appearance: none;
+}
+.inp:focus { border-color: var(--accent); }
+.inp::placeholder { color: var(--muted); }
+input[type="date"].inp, input[type="time"].inp { color-scheme: dark; cursor: pointer; }
+select.inp {
+  cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236868a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+}
+label.lbl { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.3px; }
+
+.btn {
+  border: none; border-radius: 8px; padding: 10px 18px; font-size: 0.88rem; font-weight: 600;
+  cursor: pointer; transition: all 0.18s; display: inline-flex; align-items: center;
+  justify-content: center; gap: 7px; min-height: 44px; touch-action: manipulation;
+}
+.btn-p { background: var(--accent); color: #fff; }
+.btn-p:hover { filter: brightness(1.12); }
+.btn-p:active { transform: scale(0.96); }
+.btn-g { background: var(--s2); color: var(--muted); border: 1px solid var(--border); }
+.btn-g:hover { color: var(--text); }
+.btn-tg { background: var(--tg); color: #fff; }
+.btn-tg:hover { filter: brightness(1.1); }
+.btn-tg:active { transform: scale(0.96); }
+
+.ibtn {
+  background: var(--accent); color: #fff; border: none; border-radius: 8px;
+  width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; transition: filter 0.18s; touch-action: manipulation;
+}
+.ibtn:hover { filter: brightness(1.12); }
+.ibtn:active { transform: scale(0.95); }
+
+.badge { background: var(--accent); color: #fff; border-radius: 20px; padding: 2px 9px; font-size: 0.7rem; font-weight: 700; }
+.badge-green { background: rgba(0,136,204,.2); color: var(--tg); border-radius: 6px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; }
+.badge-red { background: rgba(255,107,107,.15); color: var(--red); border-radius: 6px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; }
+
+.slist { list-style: none; max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
+.slist::-webkit-scrollbar { width: 3px; }
+.slist::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.empty { padding: 36px 18px; text-align: center; color: var(--muted); font-size: 0.84rem; line-height: 1.7; }
+
+/* ── FOCUS TAB ── */
+.focus-grid { display: flex; flex-direction: column; gap: 14px; }
+@media (min-width: 660px) { .focus-grid { display: grid; grid-template-columns: 300px 1fr; align-items: start; } .slist { max-height: 370px; } }
+@media (min-width: 860px) { .focus-grid { grid-template-columns: 320px 1fr; } }
+
+/* Timer */
+.timer-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 16px; text-align: center; }
+.mode-tabs { display: flex; background: var(--bg); border-radius: 8px; padding: 3px; margin-bottom: 20px; gap: 2px; }
+.mtab { flex: 1; padding: 7px 4px; border: none; border-radius: 6px; background: transparent; color: var(--muted); font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.2s; touch-action: manipulation; }
+.mtab.active { background: var(--s2); color: var(--text); }
+
+.ring-wrap { position: relative; width: 165px; height: 165px; margin: 0 auto 18px; }
+@media (max-width: 380px) { .ring-wrap { width: 148px; height: 148px; } .ring-wrap svg { width: 148px; height: 148px; } }
+.ring-wrap svg { transform: rotate(-90deg); width: 165px; height: 165px; }
+.rbg { fill: none; stroke: var(--border); stroke-width: 7; }
+.rprog { fill: none; stroke: var(--accent); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.4s; }
+.rdisplay { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; pointer-events: none; }
+.rdigits { font-size: 2.4rem; font-weight: 700; letter-spacing: -1.5px; line-height: 1; }
+.rlabel { font-size: 0.68rem; color: var(--muted); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.8px; }
+
+.curtask { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; justify-content: center; min-height: 40px; gap: 6px; }
+.curtask-name { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.tcontrols { display: flex; gap: 8px; justify-content: center; }
+.tcontrols .btn { min-width: 110px; }
+
+.sdots { display: flex; gap: 7px; justify-content: center; margin-top: 16px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.3s; flex-shrink: 0; }
+.dot.done { background: var(--accent); }
+
+.stats-row { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--border); }
+.stat { text-align: center; flex: 1; }
+.sval { font-size: 1.15rem; font-weight: 700; color: var(--accent); }
+.slbl { font-size: 0.67rem; color: var(--muted); margin-top: 2px; }
+
+/* Tasks */
+.add-row { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; }
+.titem { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; min-height: 52px; touch-action: manipulation; }
+.titem:last-child { border-bottom: none; }
+.titem:hover, .titem:active { background: var(--s2); }
+.titem.active-t { background: rgba(124,111,255,.1); border-left: 3px solid var(--accent); padding-left: 13px; }
+.titem.done-t { opacity: .42; }
+.chk { width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; color: transparent; cursor: pointer; }
+.titem:hover .chk, .titem:active .chk { border-color: var(--green); }
+.done-t .chk { background: var(--green); border-color: var(--green); color: #fff; }
+.ttxt { flex: 1; font-size: 0.86rem; line-height: 1.35; }
+.done-t .ttxt { text-decoration: line-through; color: var(--muted); }
+.tmeta { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.pc { font-size: 0.67rem; color: var(--muted); background: var(--bg); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+.albl { font-size: 0.6rem; color: var(--accent); font-weight: 700; text-transform: uppercase; background: rgba(124,111,255,.15); border-radius: 4px; padding: 2px 5px; white-space: nowrap; }
+.xbtn { background: none; border: none; color: var(--border); cursor: pointer; width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; touch-action: manipulation; }
+.titem:hover .xbtn, .titem:active .xbtn { color: var(--muted); }
+.xbtn:hover { background: rgba(255,107,107,.12); color: var(--red) !important; }
+
+/* ── PLANNER TAB ── */
+.planner-top { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px; gap: 8px; }
+.planner-top h2 { font-size: 0.9rem; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pnav { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.parr { background: var(--s2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; touch-action: manipulation; }
+.parr:hover { border-color: var(--accent); color: var(--accent); }
+.parr:active { transform: scale(0.93); }
+.tod-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 0 12px; height: 36px; font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.2s; touch-action: manipulation; }
+.tod-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.timeline { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; position: relative; }
+.hr-row { display: flex; border-bottom: 1px solid var(--border); min-height: 56px; position: relative; }
+.hr-row:last-child { border-bottom: none; }
+.hr-row.cur-hr { background: rgba(124,111,255,.04); }
+.hl { width: 52px; padding: 10px 9px; font-size: 0.7rem; color: var(--muted); border-right: 1px solid var(--border); flex-shrink: 0; line-height: 1.2; }
+.cur-hr .hl { color: var(--accent); font-weight: 700; }
+.hc { flex: 1; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.evchip { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 500; border-left: 3px solid; min-height: 28px; }
+.ev-work { background: rgba(124,111,255,.14); border-color: var(--accent); color: #b0a5ff; }
+.ev-health { background: rgba(78,203,113,.14); border-color: var(--green); color: #82de9f; }
+.ev-personal { background: rgba(255,159,67,.14); border-color: var(--orange); color: #ffc57d; }
+.ev-other { background: rgba(69,170,242,.14); border-color: var(--blue); color: #88ceff; }
+.evdel { margin-left: auto; background: none; border: none; color: transparent; cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; }
+.evchip:hover .evdel, .evchip:active .evdel { color: var(--red); }
+.add-ev-btn { background: none; border: 1px dashed var(--border); color: var(--muted); font-size: 0.72rem; cursor: pointer; padding: 3px 9px; border-radius: 6px; transition: all 0.15s; align-self: flex-start; min-height: 26px; display: flex; align-items: center; gap: 4px; touch-action: manipulation; }
+.add-ev-btn:hover, .hr-row:hover .add-ev-btn { border-color: var(--accent); color: var(--accent); }
+.ev-inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+.ev-inline .inp { padding: 6px 10px; font-size: 0.82rem; min-width: 120px; flex: 1; min-height: 36px; }
+.cpick { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.cd { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; touch-action: manipulation; }
+.cd.sel { border-color: #fff; transform: scale(1.15); }
+.cd-work { background: var(--accent); } .cd-health { background: var(--green); }
+.cd-personal { background: var(--orange); } .cd-other { background: var(--blue); }
+.ct-dot { position: absolute; left: 44px; width: 9px; height: 9px; background: var(--red); border-radius: 50%; pointer-events: none; z-index: 5; margin-top: -3px; }
+.ct-line { position: absolute; left: 52px; right: 0; height: 2px; background: var(--red); pointer-events: none; z-index: 5; }
+
+/* ── REMINDERS TAB ── */
+.rem-add { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin-bottom: 12px; }
+.rem-add h2 { font-size: 0.9rem; font-weight: 700; margin-bottom: 12px; }
+.rem-form { display: flex; flex-direction: column; gap: 9px; }
+.rem-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (min-width: 520px) { .rem-row { grid-template-columns: 1fr 1fr 1fr auto; } }
+.rem-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 10px; }
+.rcard { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s; }
+.rcard.overdue { border-color: var(--red); background: rgba(255,107,107,.05); }
+.rcard.fired { opacity: .42; }
+.ricon { font-size: 0; flex-shrink: 0; color: var(--muted); }
+.rcard.overdue .ricon { color: var(--red); }
+.rcard.fired .ricon { color: var(--green); }
+.rbody { flex: 1; min-width: 0; }
+.rtitle { font-size: 0.88rem; font-weight: 600; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rtitle-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.rwhen { font-size: 0.74rem; color: var(--muted); }
+.rcard.overdue .rwhen { color: var(--red); }
+.racts { display: flex; gap: 6px; flex-shrink: 0; }
+.icobtn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; touch-action: manipulation; }
+.icobtn:hover { border-color: var(--accent); color: var(--accent); }
+.icobtn.d:hover { border-color: var(--red); color: var(--red); }
+.icobtn:active { transform: scale(0.92); }
+.rbadge { font-size: 0.6rem; background: rgba(124,111,255,.2); color: var(--accent); border-radius: 4px; padding: 1px 6px; font-weight: 700; white-space: nowrap; }
+
+/* ── SETTINGS TAB ── */
+.set-field { display: flex; flex-direction: column; gap: 5px; }
+.set-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.set-row > .set-field { flex: 1; min-width: 140px; }
+
+.setup-steps { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.setup-steps h3 { font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+.setup-steps ol { padding-left: 18px; display: flex; flex-direction: column; gap: 10px; }
+.setup-steps li { font-size: 0.84rem; line-height: 1.5; color: var(--text); }
+.setup-steps li strong { color: var(--accent); }
+.setup-steps code { background: var(--s2); border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; font-family: monospace; font-size: 0.82rem; color: var(--green); display: inline-block; margin-top: 3px; }
+.copy-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 5px; padding: 1px 8px; font-size: 0.72rem; cursor: pointer; transition: all 0.15s; }
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.tg-status { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px; font-size: 0.82rem; }
+.tg-status.ok  { background: rgba(0,136,204,.1);   color: var(--tg);  border: 1px solid rgba(0,136,204,.3); }
+.tg-status.err { background: rgba(255,107,107,.1); color: var(--red); border: 1px solid rgba(255,107,107,.25); }
+.tg-status.off { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+/* Toggle switch */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.toggle-row:last-child { border-bottom: none; }
+.toggle-info { flex: 1; }
+.toggle-info strong { font-size: 0.86rem; display: block; margin-bottom: 2px; }
+.toggle-info span { font-size: 0.74rem; color: var(--muted); }
+.toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute; inset: 0; border-radius: 13px; background: var(--border);
+  cursor: pointer; transition: background 0.25s;
+}
+.toggle input:checked + .toggle-track { background: var(--accent); }
+.toggle-track::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  transition: transform 0.25s; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.toggle input:checked + .toggle-track::after { transform: translateX(18px); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
+  left: 50%; transform: translateX(-50%) translateY(14px);
+  background: var(--s2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 18px; font-size: 0.84rem; box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  opacity: 0; transition: all 0.28s; pointer-events: none; z-index: 200;
+  white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── TELEGRAM TOAST ── */
+.toast-wa { border-color: rgba(0,136,204,.5); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="app-logo">
+    <svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="58" rx="22" ry="26" fill="#ffd966"/>
+      <rect x="34" y="48" width="32" height="7" rx="3" fill="#333"/>
+      <rect x="34" y="60" width="32" height="7" rx="3" fill="#333"/>
+      <ellipse cx="32" cy="36" rx="14" ry="8" fill="white" opacity=".85" transform="rotate(-30 32 36)"/>
+      <ellipse cx="68" cy="36" rx="14" ry="8" fill="white" opacity=".85" transform="rotate(30 68 36)"/>
+      <circle cx="43" cy="52" r="3" fill="#333"/>
+      <circle cx="57" cy="52" r="3" fill="#333"/>
+    </svg>
+    <span>Reminder Bee</span>
+  </div>
+  <div class="hclock">
+    <div class="hclock-time" id="hTime"></div>
+    <div class="hclock-date" id="hDate"></div>
+  </div>
+</header>
+
+<!-- FOCUS TAB -->
+<section id="tab-focus" class="tab active">
+  <div class="focus-grid">
+    <div class="timer-panel">
+      <div class="mode-tabs">
+        <button class="mtab active" data-mode="focus">Focus 25m</button>
+        <button class="mtab" data-mode="short">Break 5m</button>
+        <button class="mtab" data-mode="long">Long 15m</button>
+      </div>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 165 165">
+          <circle class="rbg" cx="82.5" cy="82.5" r="72"/>
+          <circle class="rprog" id="ring" cx="82.5" cy="82.5" r="72" stroke-dasharray="452.39" stroke-dashoffset="0"/>
+        </svg>
+        <div class="rdisplay">
+          <div class="rdigits" id="rDigits">25:00</div>
+          <div class="rlabel"  id="rLabel">Ready</div>
+        </div>
+      </div>
+      <div class="curtask">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;opacity:.4"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/></svg>
+        <span class="curtask-name" id="curTaskName">No task selected</span>
+      </div>
+      <div class="tcontrols">
+        <button class="btn btn-p" id="startBtn" onclick="toggleTimer()">
+          <span id="startIcon"></span><span id="startTxt">Start</span>
+        </button>
+        <button class="btn btn-g" onclick="resetTimer()">
+          <span id="resetIcon"></span><span>Reset</span>
+        </button>
+      </div>
+      <div class="sdots" id="sdots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat"><div class="sval" id="stSess">0</div><div class="slbl">Sessions</div></div>
+        <div class="stat"><div class="sval" id="stMin">0</div><div class="slbl">Min focused</div></div>
+        <div class="stat"><div class="sval" id="stDone">0</div><div class="slbl">Tasks done</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <h2>Today's Tasks</h2>
+        <span class="badge" id="taskBadge">0</span>
+      </div>
+      <div class="add-row">
+        <input class="inp" id="taskInp" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()">
+        <button class="ibtn" onclick="addTask()" aria-label="Add task">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      <ul class="slist" id="taskList"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- PLANNER TAB -->
+<section id="tab-planner" class="tab">
+  <div class="planner-top">
+    <h2 id="plannerLabel">Today</h2>
+    <div class="pnav">
+      <button class="parr" onclick="shiftDay(-1)" aria-label="Previous day">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="tod-btn" onclick="goToday()">Today</button>
+      <button class="parr" onclick="shiftDay(1)" aria-label="Next day">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="timeline" id="timeline"></div>
+</section>
+
+<!-- REMINDERS TAB -->
+<section id="tab-reminders" class="tab">
+  <div class="rem-add">
+    <h2>New Reminder</h2>
+    <div class="rem-form">
+      <input class="inp" id="remTitle" placeholder="What do you need to remember?">
+      <div class="rem-row">
+        <input class="inp" type="date" id="remDate">
+        <input class="inp" type="time" id="remTime">
+        <select class="inp" id="remRepeat" style="min-width:90px">
+          <option value="once">Once</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
+        <button class="ibtn" onclick="addReminder()" aria-label="Add reminder">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="rem-list" id="remList"></div>
+</section>
+
+<!-- SETTINGS TAB -->
+<section id="tab-settings" class="tab">
+
+  <!-- Telegram Setup -->
+  <div class="card">
+    <div class="card-hdr">
+      <h2 style="display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--tg)"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        Telegram Notifications
+      </h2>
+      <span id="waStatusBadge" class="badge-red">Off</span>
+    </div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Status -->
+      <div id="waStatus" class="tg-status off">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="3"/></svg>
+        Enter your Bot Token below to enable Telegram notifications.
+      </div>
+
+      <!-- Setup steps -->
+      <div class="setup-steps">
+        <h3>One-time setup (3 min)</h3>
+        <ol>
+          <li>Open Telegram and search for <strong>@BotFather</strong></li>
+          <li>Send: <code>/newbot</code>
+            <button class="copy-btn" onclick="copyText('/newbot', this)">Copy</button>
+          </li>
+          <li>Give your bot a name and username — you'll receive a <strong>Bot Token</strong> that looks like <code>123456:ABCdef...</code></li>
+          <li>Search for your new bot in Telegram and send it any message (e.g. <em>hello</em>)</li>
+          <li>Paste the token below, then click <strong>Detect Chat ID</strong> — done!</li>
+        </ol>
+      </div>
+
+      <!-- Credentials -->
+      <div class="set-row">
+        <div class="set-field">
+          <label class="lbl">Bot Token (from @BotFather)</label>
+          <input class="inp" id="setToken" type="text" placeholder="123456:ABCdefGHI...">
+        </div>
+        <div class="set-field">
+          <label class="lbl">Your Chat ID</label>
+          <div style="display:flex;gap:6px;">
+            <input class="inp" id="setChatId" type="text" placeholder="Auto-detected" style="flex:1">
+            <button class="btn btn-g" onclick="detectChatId()" style="flex-shrink:0;white-space:nowrap;padding:0 12px">Detect</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-p" onclick="saveSettings()" style="flex:1;min-width:100px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save
+        </button>
+        <button class="btn btn-tg" onclick="testTelegram()" style="flex:1;min-width:100px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+          Send Test
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Notify When -->
+  <div class="card">
+    <div class="card-hdr"><h2>Notify me when…</h2></div>
+    <div class="card-body">
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <strong>Reminder fires</strong>
+          <span>Send a WhatsApp message for every reminder</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="togReminder" checked disabled>
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <strong>Focus session completes</strong>
+          <span>Message when your 25-min session ends</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="togSession" onchange="savePref()">
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <strong>Break time ends</strong>
+          <span>Message when it's time to get back to work</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="togBreak" onchange="savePref()">
+          <div class="toggle-track"></div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="bnav-btn active" data-tab="focus" onclick="switchTab('focus')" aria-label="Focus">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="13" r="9"/><polyline points="12 8 12 13 15 15"/>
+      <line x1="9" y1="2" x2="15" y2="2" stroke-width="2.2"/>
+    </svg>
+    <span>Focus</span>
+  </button>
+  <button class="bnav-btn" data-tab="planner" onclick="switchTab('planner')" aria-label="Planner">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+    <span>Planner</span>
+  </button>
+  <button class="bnav-btn" data-tab="reminders" onclick="switchTab('reminders')" aria-label="Reminders">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+    <span>Reminders</span>
+    <span class="nbadge" id="remBadge">0</span>
+  </button>
+  <button class="bnav-btn" data-tab="settings" onclick="switchTab('settings')" aria-label="Settings">
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    <span>Settings</span>
+    <span class="tg-dot" id="waDot"></span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── ICONS ────────────────────────────────
+const IC = {
+  play:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+  pause:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`,
+  reset:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.2L1 10"/></svg>`,
+  check:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  x:       `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  trash:   `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`,
+  dismiss: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+  bell:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+  ok:      `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  plus_sm: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+};
+
+// ── STATE ────────────────────────────────
+const MODES = {
+  focus: { label:'Focusing…',   secs:25*60, color:'#7c6fff' },
+  short: { label:'Short break', secs:5*60,  color:'#4ecb71' },
+  long:  { label:'Long break',  secs:15*60, color:'#ff9f43' },
+};
+const CIRC = 2 * Math.PI * 72;
+
+let timerMode = 'focus', totalSecs = MODES.focus.secs, remaining = totalSecs;
+let running = false, timerInt = null, sessCount = 0, totalMin = 0, activeTask = null;
+
+let tasks     = JSON.parse(localStorage.getItem('ff_tasks')     || '[]');
+let events    = JSON.parse(localStorage.getItem('ff_events')    || '[]');
+let reminders = JSON.parse(localStorage.getItem('ff_reminders') || '[]');
+let settings  = JSON.parse(localStorage.getItem('ff_settings')  || '{}');
+
+let plannerDate = todayStr(), editHour = null, editColor = 'work';
+
+// ── TABS ─────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + name));
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  if (name === 'planner')  renderPlanner();
+  if (name === 'reminders') renderReminders();
+  if (name === 'settings') renderSettings();
+}
+
+// ── CLOCK ────────────────────────────────
+function tickClock() {
+  const n = new Date();
+  document.getElementById('hTime').textContent = n.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit' });
+  document.getElementById('hDate').textContent = n.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+}
+
+// ── TIMER ────────────────────────────────
+function toggleTimer() {
+  if (running) {
+    clearInterval(timerInt); running = false;
+    setStartBtn(false); document.getElementById('rLabel').textContent = 'Paused';
+  } else {
+    running = true;
+    setStartBtn(true); document.getElementById('rLabel').textContent = MODES[timerMode].label;
+    timerInt = setInterval(timerTick, 1000);
+  }
+}
+function setStartBtn(isRunning) {
+  document.getElementById('startIcon').innerHTML = isRunning ? IC.pause : IC.play;
+  document.getElementById('startTxt').textContent = isRunning ? 'Pause' : (remaining < totalSecs ? 'Resume' : 'Start');
+}
+function timerTick() {
+  if (remaining <= 0) { clearInterval(timerInt); running = false; onSessionEnd(); return; }
+  remaining--; renderTimer();
+}
+function onSessionEnd() {
+  playBeep();
+  if (timerMode === 'focus') {
+    sessCount++; totalMin += 25;
+    if (activeTask != null) {
+      const t = tasks.find(x => x.id === activeTask);
+      if (t) { t.pomodoros = (t.pomodoros || 0) + 1; saveTasks(); }
+    }
+    updateStats(); renderDots(); renderTasks();
+    pushNotif('Reminder Bee 🐝', 'Session done! Time for a break.');
+    showToast('Session complete! Take a break.');
+    if (settings.notifySession) sendTelegram(`✅ *Focus session \\#${sessCount} complete\\!* Time for a break\\. 🍅`);
+    setTimerMode(sessCount % 4 === 0 ? 'long' : 'short');
+  } else {
+    pushNotif('Reminder Bee 🐝', 'Break over — ready to focus again?');
+    showToast('Break over — back to work!');
+    if (settings.notifyBreak) sendTelegram('⏰ *Break time over* — back to focus\\! 💪');
+    setTimerMode('focus');
+  }
+  setStartBtn(false);
+}
+function resetTimer() {
+  clearInterval(timerInt); running = false; remaining = totalSecs;
+  setStartBtn(false); document.getElementById('rLabel').textContent = 'Ready'; renderTimer();
+}
+function setTimerMode(m) {
+  clearInterval(timerInt); running = false;
+  timerMode = m; totalSecs = MODES[m].secs; remaining = totalSecs;
+  setStartBtn(false); document.getElementById('rLabel').textContent = 'Ready';
+  document.getElementById('ring').style.stroke = MODES[m].color;
+  document.querySelectorAll('.mtab').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  renderTimer();
+}
+function renderTimer() {
+  const m = String(Math.floor(remaining/60)).padStart(2,'0');
+  const s = String(remaining%60).padStart(2,'0');
+  document.getElementById('rDigits').textContent = `${m}:${s}`;
+  document.getElementById('ring').style.strokeDashoffset = CIRC * (1 - remaining/totalSecs);
+}
+function renderDots() {
+  const mod = sessCount % 4;
+  document.querySelectorAll('#sdots .dot').forEach((d,i) => d.classList.toggle('done', i < mod));
+}
+function updateStats() {
+  document.getElementById('stSess').textContent = sessCount;
+  document.getElementById('stMin').textContent  = totalMin;
+  document.getElementById('stDone').textContent = tasks.filter(t => t.done).length;
+}
+
+// ── TASKS ────────────────────────────────
+function addTask() {
+  const inp = document.getElementById('taskInp');
+  const v = inp.value.trim(); if (!v) return;
+  tasks.unshift({ id: Date.now(), text: v, done: false, pomodoros: 0 });
+  saveTasks(); renderTasks(); inp.value = ''; inp.focus();
+  showToast('Task added — tap it to activate');
+}
+function selectTask(id) {
+  activeTask = activeTask === id ? null : id;
+  const t = tasks.find(x => x.id === id);
+  document.getElementById('curTaskName').textContent = (activeTask && t) ? t.text : 'No task selected';
+  renderTasks();
+}
+function toggleTaskDone(id, e) {
+  e.stopPropagation();
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  t.done = !t.done;
+  if (t.done && activeTask === id) { activeTask = null; document.getElementById('curTaskName').textContent = 'No task selected'; }
+  saveTasks(); renderTasks(); updateStats();
+}
+function deleteTask(id, e) {
+  e.stopPropagation();
+  tasks = tasks.filter(t => t.id !== id);
+  if (activeTask === id) { activeTask = null; document.getElementById('curTaskName').textContent = 'No task selected'; }
+  saveTasks(); renderTasks(); updateStats();
+}
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  document.getElementById('taskBadge').textContent = tasks.filter(t => !t.done).length;
+  if (!tasks.length) { list.innerHTML = '<div class="empty">No tasks yet.<br>Add something to tackle today.</div>'; return; }
+  list.innerHTML = tasks.map(t => `
+    <li class="titem ${t.id===activeTask?'active-t':''} ${t.done?'done-t':''}" onclick="selectTask(${t.id})">
+      <div class="chk" onclick="toggleTaskDone(${t.id},event)">${t.done?IC.check:''}</div>
+      <div class="ttxt">${esc(t.text)}</div>
+      <div class="tmeta">
+        ${t.pomodoros>0?`<span class="pc">🍅 ${t.pomodoros}</span>`:''}
+        ${t.id===activeTask?'<span class="albl">Active</span>':''}
+        <button class="xbtn" onclick="deleteTask(${t.id},event)">${IC.x}</button>
+      </div>
+    </li>`).join('');
+}
+function saveTasks() { localStorage.setItem('ff_tasks', JSON.stringify(tasks)); }
+
+// ── PLANNER ──────────────────────────────
+const HOURS = Array.from({length:18},(_,i)=>i+6);
+
+function shiftDay(d) {
+  const dt = new Date(plannerDate + 'T12:00:00');
+  dt.setDate(dt.getDate() + d);
+  plannerDate = dt.toISOString().slice(0,10); renderPlanner();
+}
+function goToday() { plannerDate = todayStr(); renderPlanner(); }
+
+function renderPlanner() {
+  const isToday = plannerDate === todayStr();
+  const dtLabel = new Date(plannerDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('plannerLabel').textContent = isToday ? `Today — ${dtLabel}` : dtLabel;
+  const now = new Date(), curH = now.getHours(), curM = now.getMinutes();
+  const dayEvs = events.filter(e => e.date === plannerDate);
+  const ROW_H = 56;
+
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = HOURS.map(h => {
+    const hLabel = h === 0 ? '12AM' : h < 12 ? `${h}AM` : h === 12 ? '12PM' : `${h-12}PM`;
+    const isCur  = isToday && h === curH;
+    const hEvs   = dayEvs.filter(e => e.hour === h);
+    const isEdit = editHour === h;
+    return `<div class="hr-row${isCur?' cur-hr':''}" data-h="${h}">
+      <div class="hl">${hLabel}</div>
+      <div class="hc">
+        ${hEvs.map(ev=>`<div class="evchip ev-${ev.color}">
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ev.title)}</span>
+          <button class="evdel" onclick="deleteEvent(${ev.id},event)">${IC.x}</button>
+        </div>`).join('')}
+        ${isEdit ? `<div class="ev-inline">
+          <input class="inp" id="evInp" placeholder="Event title…" onkeydown="if(event.key==='Enter')saveEvent(${h})">
+          <div class="cpick">${['work','health','personal','other'].map(c=>`<div class="cd cd-${c}${editColor===c?' sel':''}" onclick="setEvColor('${c}')"></div>`).join('')}</div>
+          <button class="ibtn" onclick="saveEvent(${h})" style="width:36px;height:36px">${IC.ok}</button>
+          <button class="btn btn-g" onclick="cancelEvEdit()" style="padding:0 10px;height:36px;font-size:0.78rem;min-height:unset">${IC.x}</button>
+        </div>` : `<button class="add-ev-btn" onclick="openEvEdit(${h})">${IC.plus_sm} Add</button>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  if (isToday && curH >= 6 && curH <= 23) {
+    const top = (curH-6)*ROW_H + (curM/60)*ROW_H;
+    tl.insertAdjacentHTML('beforeend',
+      `<div class="ct-dot" style="top:${top}px"></div><div class="ct-line" style="top:${top+4}px"></div>`);
+    const rows = tl.querySelectorAll('.hr-row');
+    const idx = Math.max(0, curH-6-1);
+    if (rows[idx]) rows[idx].scrollIntoView({block:'nearest'});
+  }
+  if (editHour !== null) { const inp = document.getElementById('evInp'); if (inp) inp.focus(); }
+}
+function openEvEdit(h)  { editHour = h; renderPlanner(); }
+function cancelEvEdit() { editHour = null; renderPlanner(); }
+function setEvColor(c)  { editColor = c; renderPlanner(); }
+function saveEvent(h) {
+  const inp = document.getElementById('evInp');
+  const v = inp ? inp.value.trim() : ''; if (!v) { cancelEvEdit(); return; }
+  events.push({id:Date.now(),date:plannerDate,hour:h,title:v,color:editColor});
+  saveEvents(); editHour = null; renderPlanner();
+}
+function deleteEvent(id, e) {
+  e.stopPropagation(); events = events.filter(x => x.id !== id);
+  saveEvents(); renderPlanner();
+}
+function saveEvents() { localStorage.setItem('ff_events', JSON.stringify(events)); }
+
+// ── REMINDERS ────────────────────────────
+function addReminder() {
+  const title  = document.getElementById('remTitle').value.trim();
+  const date   = document.getElementById('remDate').value;
+  const time   = document.getElementById('remTime').value;
+  const repeat = document.getElementById('remRepeat').value;
+  if (!title || !date || !time) { showToast('Fill in title, date & time'); return; }
+  reminders.push({id:Date.now(),title,date,time,repeat,fired:false});
+  saveReminders(); renderReminders(); updateRemBadge();
+  document.getElementById('remTitle').value = '';
+  showToast('Reminder set!');
+}
+function dismissReminder(id) {
+  const r = reminders.find(x => x.id === id); if (!r) return;
+  if (r.repeat === 'once') { r.fired = true; }
+  else {
+    const dt = new Date(`${r.date}T${r.time}`);
+    dt.setDate(dt.getDate() + (r.repeat === 'weekly' ? 7 : 1));
+    r.date = dt.toISOString().slice(0,10); r.fired = false;
+  }
+  saveReminders(); renderReminders(); updateRemBadge();
+}
+function deleteReminder(id) {
+  reminders = reminders.filter(x => x.id !== id);
+  saveReminders(); renderReminders(); updateRemBadge();
+}
+function renderReminders() {
+  const sorted = [...reminders].sort((a,b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+  const el = document.getElementById('remList');
+  if (!sorted.length) { el.innerHTML = '<div class="empty">No reminders yet.<br>Add one above to get notified.</div>'; return; }
+  el.innerHTML = sorted.map(r => {
+    const dt   = new Date(`${r.date}T${r.time}`);
+    const now  = new Date();
+    const diff = dt - now;
+    const past = diff < 0;
+    const when = r.fired ? 'Completed' : past ? `Overdue · ${fmtTime(dt)}` : fmtRel(diff, dt);
+    const cls  = r.fired ? 'fired' : past ? 'overdue' : '';
+    const iconSvg = r.fired
+      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+      : past
+      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="3"/></svg>`
+      : IC.bell;
+    const rep = r.repeat !== 'once' ? `<span class="rbadge">${r.repeat}</span>` : '';
+    return `<div class="rcard ${cls}">
+      <div class="ricon">${iconSvg}</div>
+      <div class="rbody">
+        <div class="rtitle"><span class="rtitle-text">${esc(r.title)}</span>${rep}</div>
+        <div class="rwhen">${when}</div>
+      </div>
+      <div class="racts">
+        ${!r.fired?`<button class="icobtn" onclick="dismissReminder(${r.id})" title="Done">${IC.dismiss}</button>`:''}
+        <button class="icobtn d" onclick="deleteReminder(${r.id})" title="Delete">${IC.trash}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function saveReminders() { localStorage.setItem('ff_reminders', JSON.stringify(reminders)); }
+
+function checkReminders() {
+  const now = new Date();
+  let changed = false;
+  reminders.forEach(r => {
+    if (r.fired) return;
+    const dt   = new Date(`${r.date}T${r.time}`);
+    const diff = now - dt;
+    if (diff >= 0 && diff < 60000) {
+      pushNotif('Reminder Bee 🐝', `${r.title}`);
+      showToastTg(`🔔 ${r.title}`);
+      playBeep();
+      sendTelegram(`🔔 *Reminder:* ${escapeTg(r.title)}\n_${escapeTg(fmtTime(dt))}_`);
+      if (r.repeat === 'once') { r.fired = true; }
+      else {
+        const next = new Date(dt);
+        next.setDate(next.getDate() + (r.repeat === 'weekly' ? 7 : 1));
+        r.date = next.toISOString().slice(0,10);
+      }
+      changed = true;
+    }
+  });
+  if (changed) { saveReminders(); renderReminders(); }
+  updateRemBadge();
+}
+function updateRemBadge() {
+  const now = new Date(), ts = todayStr();
+  const n = reminders.filter(r => !r.fired && r.date === ts && new Date(`${r.date}T${r.time}`) > now).length;
+  const el = document.getElementById('remBadge');
+  el.textContent = n; el.style.display = n > 0 ? 'block' : 'none';
+}
+
+// ── SETTINGS ─────────────────────────────
+function saveSettings() {
+  const token  = document.getElementById('setToken').value.trim();
+  const chatId = document.getElementById('setChatId').value.trim();
+  if (!token || !chatId) { showToast('Enter both Bot Token and Chat ID'); return; }
+  settings.tgToken  = token;
+  settings.tgChatId = chatId;
+  localStorage.setItem('ff_settings', JSON.stringify(settings));
+  renderSettings();
+  showToast('Settings saved!');
+}
+
+function savePref() {
+  settings.notifySession = document.getElementById('togSession').checked;
+  settings.notifyBreak   = document.getElementById('togBreak').checked;
+  localStorage.setItem('ff_settings', JSON.stringify(settings));
+}
+
+async function detectChatId() {
+  const token = document.getElementById('setToken').value.trim();
+  if (!token) { showToast('Paste your Bot Token first'); return; }
+  const btn = event.target;
+  btn.textContent = 'Detecting…'; btn.disabled = true;
+  try {
+    const res  = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.description || 'Invalid token');
+    const msg = data.result.find(u => u.message || u.channel_post);
+    if (!msg) {
+      showToast('No messages found — send your bot any message first!');
+    } else {
+      const id = (msg.message || msg.channel_post).chat.id;
+      document.getElementById('setChatId').value = id;
+      showToastTg('Chat ID detected: ' + id);
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  } finally {
+    btn.textContent = 'Detect'; btn.disabled = false;
+  }
+}
+
+async function testTelegram() {
+  const token  = document.getElementById('setToken').value.trim();
+  const chatId = document.getElementById('setChatId').value.trim();
+  if (!token || !chatId) { showToast('Save your Token and Chat ID first'); return; }
+  const ok = await sendTelegramDirect(token, chatId,
+    '🐝 *Reminder Bee* — Telegram notifications are working\\! 🎉\n_This is a test message\\._');
+  if (ok) showToastTg('Test sent! Check Telegram');
+  else    showToast('Failed — double-check your token and chat ID');
+}
+
+function renderSettings() {
+  const connected = !!(settings.tgToken && settings.tgChatId);
+  const statusEl  = document.getElementById('waStatus');
+  const badgeEl   = document.getElementById('waStatusBadge');
+  const dotEl     = document.getElementById('waDot');
+  if (connected) {
+    statusEl.className = 'tg-status ok';
+    statusEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Connected — Telegram notifications are active.`;
+    badgeEl.textContent = 'On'; badgeEl.className = 'badge-green';
+    dotEl.style.display = 'block';
+  } else {
+    statusEl.className = 'tg-status off';
+    statusEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="3"/></svg> Enter your Bot Token below to enable Telegram notifications.`;
+    badgeEl.textContent = 'Off'; badgeEl.className = 'badge-red';
+    dotEl.style.display = 'none';
+  }
+  if (settings.tgToken)  document.getElementById('setToken').value  = settings.tgToken;
+  if (settings.tgChatId) document.getElementById('setChatId').value = settings.tgChatId;
+  document.getElementById('togSession').checked = !!settings.notifySession;
+  document.getElementById('togBreak').checked   = !!settings.notifyBreak;
+}
+
+// ── TELEGRAM ─────────────────────────────
+function sendTelegram(text) {
+  if (settings.tgToken && settings.tgChatId) {
+    sendTelegramDirect(settings.tgToken, settings.tgChatId, text);
+  }
+}
+
+async function sendTelegramDirect(token, chatId, text) {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'MarkdownV2' })
+    });
+    const data = await res.json();
+    return data.ok;
+  } catch(e) { return false; }
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent; btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1800);
+  }).catch(() => showToast('Copy failed — please copy manually'));
+}
+
+// ── UTILS ────────────────────────────────
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function fmtTime(dt) {
+  return dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+    + ' · ' + dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+function fmtRel(diffMs, dt) {
+  const m = Math.round(diffMs/60000);
+  if (m < 1)  return 'Any moment now!';
+  if (m < 60) return `in ${m} min`;
+  const h = Math.floor(m/60);
+  if (h < 24) return `in ${h} hr${h>1?'s':''}`;
+  const d = Math.floor(h/24);
+  if (d < 7)  return `${d} day${d>1?'s':''} · ${dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+  return fmtTime(dt);
+}
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function showToast(msg, isWa) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isWa ? ' toast-wa' : '');
+  t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.classList.remove('show'), 3000);
+}
+function showToastTg(msg) { showToast(msg, true); }
+function escapeTg(s) { return s.replace(/[_*[\]()~`>#+=|{}.!-]/g, c => '\\' + c); }
+
+function pushNotif(title, body) {
+  if (Notification.permission === 'granted') new Notification(title, { body });
+}
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.22, 0.44].forEach(t => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 740;
+      g.gain.setValueAtTime(0.25, ctx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.18);
+      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.2);
+    });
+  } catch(e) {}
+}
+
+// ── INIT ─────────────────────────────────
+document.querySelectorAll('.mtab').forEach(b => b.addEventListener('click', () => setTimerMode(b.dataset.mode)));
+
+if (Notification.permission === 'default') Notification.requestPermission();
+
+// Pre-fill reminder date/time
+document.getElementById('remDate').value = todayStr();
+const nh = new Date(); nh.setHours(nh.getHours()+1,0,0,0);
+document.getElementById('remTime').value = String(nh.getHours()).padStart(2,'0') + ':00';
+
+// Button icons
+document.getElementById('startIcon').innerHTML = IC.play;
+document.getElementById('resetIcon').innerHTML = IC.reset;
+
+// Load settings state
+renderSettings();
+
+// First render
+renderTimer(); renderTasks(); updateStats(); tickClock();
+
+setInterval(tickClock, 1000);
+setInterval(checkReminders, 30000);
+checkReminders();
+</script>
+</body>
+</html>
